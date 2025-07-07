@@ -477,6 +477,7 @@ cfbd_pbp_data <- function(year,
           dplyr::left_join(game_spread, by = c("game_id"))
       },
       error = function(e) {
+        message(glue::glue("{Sys.time()}: PBP function Error!{e}"))
       },
       finally = {
       }

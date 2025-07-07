@@ -222,7 +222,7 @@ cfbd_drives <- function(year,
         make_cfbfastR_data("Drives data from CollegeFootballData.com",Sys.time())
     },
     error = function(e) {
-        message(glue::glue("{Sys.time()}: Invalid arguments or no drives data available!"))
+        message(glue::glue("{Sys.time()}: Invalid arguments or no drives data available!{e}"))
     },
     finally = {
     }
