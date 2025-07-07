@@ -465,8 +465,6 @@ cfbd_pbp_data <- function(year,
       expr = {
         game_spread <- cfbd_betting_lines(year = year, week = week, season_type = season_type, team = team)
 
-        print(game_spread)
-
         game_spread <- game_spread %>%
           dplyr::filter(.data$provider == "consensus") %>%
           dplyr::mutate(
@@ -474,6 +472,9 @@ cfbd_pbp_data <- function(year,
             over_under = as.numeric(.data$over_under)
           ) %>%
           dplyr::select("game_id", "spread", "formatted_spread", "over_under")
+
+        print(game_spread)
+        print(raw_play_df)
 
         raw_play_df <- raw_play_df %>%
           dplyr::left_join(game_spread, by = c("game_id"))
