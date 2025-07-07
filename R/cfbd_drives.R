@@ -133,6 +133,22 @@ cfbd_drives <- function(year,
     division <- utils::URLencode(division, reserved = TRUE)
   }
 
+  add_elapsed_time_columns <- function(df, start_min_col, start_sec_col, end_min_col, end_sec_col) {
+
+    # Use dplyr's mutate and across to perform the calculation for each row
+    df <- df %>%
+      mutate(
+        start_total_seconds = ({{start_min_col}} * 60) + {{start_sec_col}},
+        end_total_seconds = ({{end_min_col}} * 60) + {{end_sec_col}},
+        total_elapsed_seconds = start_total_seconds - end_total_seconds,
+        elapsed_minutes = total_elapsed_seconds %/% 60,
+        elapsed_seconds = total_elapsed_seconds %% 60
+      ) %>%
+      # Remove the intermediate calculation columns
+      select(-start_total_seconds, -end_total_seconds, -total_elapsed_seconds)
+
+    return(df)
+  }
 
   base_url <- "https://api.collegefootballdata.com/drives?"
 
@@ -170,14 +186,21 @@ cfbd_drives <- function(year,
       df <- res %>%
         httr::content(as = "text", encoding = "UTF-8") %>%
         jsonlite::fromJSON(flatten = TRUE) %>%
+        janitor::clean_names() %>%
+        add_elapsed_time_columns(
+          start_time_minutes,
+          start_time_seconds,
+          end_time_minutes,
+          end_time_seconds
+        ) %>%
         dplyr::rename(
           "drive_id" = "id",
-          "time_minutes_start" = "start_time.minutes",
-          "time_seconds_start" = "start_time.seconds",
-          "time_minutes_end" = "end_time.minutes",
-          "time_seconds_end" = "end_time.seconds",
-          "time_minutes_elapsed" = "elapsed.minutes",
-          "time_seconds_elapsed" = "elapsed.seconds"
+          "time_minutes_start" = "start_time_minutes",
+          "time_seconds_start" = "start_time_seconds",
+          "time_minutes_end" = "end_time_minutes",
+          "time_seconds_end" = "end_time_seconds",
+          "time_minutes_elapsed" = "elapsed_minutes",
+          "time_seconds_elapsed" = "elapsed_seconds"
         ) %>%
         dplyr::mutate(
           time_minutes_elapsed = ifelse(is.na(.data$time_minutes_elapsed), 0, .data$time_minutes_elapsed),
@@ -186,13 +209,13 @@ cfbd_drives <- function(year,
 
       # 2021 games with pbp data from another (non-ESPN) source include extra unclear columns for hours.
       # Minutes and seconds from these games are also suspect
-      if ("start_time.hours" %in% names(df)) {
+      if ("startTime.hours" %in% names(df)) {
         df <- df %>%
-          dplyr::select(-"start_time.hours")
+          dplyr::select(-"startTime.hours")
       }
-      if ("end_time.hours" %in% names(df)) {
+      if ("endTime.hours" %in% names(df)) {
         df <- df %>%
-          dplyr::select(-"end_time.hours")
+          dplyr::select(-"endTime.hours")
       }
 
       df <- df %>%

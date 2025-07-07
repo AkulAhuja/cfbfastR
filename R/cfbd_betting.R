@@ -106,17 +106,30 @@ cfbd_betting_lines <- function(game_id = NULL,
   # cfbfastR::cfbd_betting_lines(year = 2018, week = 12, team = "Florida State")
   base_url <- "https://api.collegefootballdata.com/lines?"
 
-  full_url <- paste0(
-    base_url,
-    "gameId=", game_id,
-    "&year=", year,
-    "&week=", week,
-    "&seasonType=", season_type,
-    "&team=", team,
-    "&home=", home_team,
-    "&away=", away_team,
-    "&conference=", conference
-  )
+  if (!is.null(game_id)) {
+    full_url <- paste0(
+      base_url,
+      "gameId=", game_id,
+      "&year=", year,
+      "&week=", week,
+      "&seasonType=", season_type,
+      "&team=", team,
+      "&home=", home_team,
+      "&away=", away_team,
+      "&conference=", conference
+    )
+  } else {
+    full_url <- paste0(
+      base_url,
+      "year=", year,
+      "&week=", week,
+      "&seasonType=", season_type,
+      "&team=", team,
+      "&home=", home_team,
+      "&away=", away_team,
+      "&conference=", conference
+    )
+  }
 
   # Check for CFBD API key
   if (!has_cfbd_key()) stop("CollegeFootballData.com now requires an API key.", "\n       See ?register_cfbd for details.", call. = FALSE)
@@ -144,12 +157,12 @@ cfbd_betting_lines <- function(game_id = NULL,
         tidyr::unnest("lines") %>%
         dplyr::mutate(
             overUnder = dplyr::case_when(
-                .data$overUnder == "null" ~ NA_character_,
-                .default = .data$overUnder
+                .data$overUnder == "null" ~ NA_real_,
+                .default = as.double(.data$overUnder)
             ),
             spread = dplyr::case_when(
-                .data$spread == "null" ~ NA_character_,
-                .default = .data$spread
+                .data$spread == "null" ~ NA_real_,
+                .default = as.double(.data$spread)
             ),
             formattedSpread = dplyr::case_when(
                 is.na(.data$spread) ~ NA_character_,
@@ -185,7 +198,7 @@ cfbd_betting_lines <- function(game_id = NULL,
         make_cfbfastR_data("Betting lines data from CollegeFootballData.com",Sys.time())
     },
     error = function(e) {
-      message(glue::glue("{Sys.time()}: Invalid arguments or no betting lines data available!"))
+      message(glue::glue("{Sys.time()}: Invalid arguments or no betting lines data available! {e}"))
     },
     warning = function(w) {
     },
