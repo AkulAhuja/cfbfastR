@@ -188,18 +188,14 @@ cfbd_betting_lines <- function(game_id = NULL,
       if (is.list(df) & length(df) == 0) {
         df <- data.frame(game_id = game_id, spread = 0, formatted_spread = "home 0")
       } else {
-        print(df)
         df <- df %>%
           janitor::clean_names() %>%
           dplyr::rename("game_id" = "id") %>%
           as.data.frame()
       }
-      print(df)
 
       df <- df %>%
         make_cfbfastR_data("Betting lines data from CollegeFootballData.com",Sys.time())
-
-      print(df)
     },
     error = function(e) {
       message(glue::glue("{Sys.time()}: Invalid arguments or no betting lines data available! {e}"))

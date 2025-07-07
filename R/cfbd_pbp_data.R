@@ -465,6 +465,8 @@ cfbd_pbp_data <- function(year,
       expr = {
         game_spread <- cfbd_betting_lines(year = year, week = week, season_type = season_type, team = team)
 
+        print(game_spread)
+
         game_spread <- game_spread %>%
           dplyr::filter(.data$provider == "consensus") %>%
           dplyr::mutate(
