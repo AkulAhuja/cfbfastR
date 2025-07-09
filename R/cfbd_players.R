@@ -102,13 +102,25 @@ cfbd_player_info <- function(search_term,
   base_url <- "https://api.collegefootballdata.com/player/search?"
 
   # Create full url using base and input arguments
-  full_url <- paste0(
-    base_url,
-    "searchTerm=", search_term,
-    "&position=", position,
-    "&team=", team,
-    "&year=", year
+
+  params <- list(
+    searchTerm = search_term,
+    position = position,
+    team = team,
+    year = year
   )
+  params <- Filter(function(x) !is.null(x) && !is.na(x) && nzchar(x), params)
+  full_url <- base_url
+  if (length(params) > 0) {
+    # URL-encode the parameter values and collapse into a query string
+    query_string <- paste(
+      names(params),
+      params,
+      sep = "=",
+      collapse = "&"
+    )
+    full_url <- paste0(base_url, query_string)
+  }
 
   # Check for CFBD API key
   if (!has_cfbd_key()) stop("CollegeFootballData.com now requires an API key.", "\n       See ?register_cfbd for details.", call. = FALSE)

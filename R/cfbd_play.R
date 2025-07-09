@@ -346,18 +346,29 @@ cfbd_play_stats_player <- function(year = NULL,
     cli::cli_abort("Enter valid season_type (String): regular, postseason, or both")
   }
 
-  base_url <- "https://api.collegefootballdata.com/play/stats?"
+  base_url <- "https://api.collegefootballdata.com/plays/stats?"
 
-  full_url <- paste0(
-    base_url,
-    "year=", year,
-    "&week=", week,
-    "&team=", team,
-    "&gameId=", game_id,
-    "&athleteID=", athlete_id,
-    "&statTypeId=", stat_type_id,
-    "&seasonType=", season_type
+  params <- list(
+    year = year,
+    week = week,
+    team = team,
+    gameId = game_id,
+    athleteId = athlete_id,
+    statTypeId = stat_type_id,
+    seasonType = season_type
   )
+  params <- Filter(function(x) !is.null(x) && !is.na(x) && nzchar(x), params)
+  full_url <- base_url
+  if (length(params) > 0) {
+    # URL-encode the parameter values and collapse into a query string
+    query_string <- paste(
+      names(params),
+      params,
+      sep = "=",
+      collapse = "&"
+    )
+    full_url <- paste0(base_url, query_string)
+  }
 
   # Check for CFBD API key
   if (!has_cfbd_key()) stop("CollegeFootballData.com now requires an API key.", "\n       See ?register_cfbd for details.", call. = FALSE)
@@ -550,7 +561,7 @@ cfbd_play_stats_player <- function(year = NULL,
         make_cfbfastR_data("Play-level player data from CollegeFootballData.com",Sys.time())
     },
     error = function(e) {
-      message(glue::glue("{Sys.time()}: Invalid arguments or no play-level player stats data available!"))
+      message(glue::glue("{Sys.time()}: Invalid arguments or no play-level player stats data available! {e}"))
     },
     finally = {
     }
@@ -575,7 +586,7 @@ cfbd_play_stats_player <- function(year = NULL,
 #'   try(cfbd_play_stats_types())
 #' }
 cfbd_play_stats_types <- function() {
-  full_url <- "https://api.collegefootballdata.com/play/stat/types"
+  full_url <- "https://api.collegefootballdata.com/plays/stats/types"
 
   # Check for CFBD API key
   if (!has_cfbd_key()) stop("CollegeFootballData.com now requires an API key.", "\n       See ?register_cfbd for details.", call. = FALSE)
@@ -605,7 +616,7 @@ cfbd_play_stats_types <- function() {
 
     },
     error = function(e) {
-      message(glue::glue("{Sys.time()}: Invalid arguments or no play stats types data available!"))
+      message(glue::glue("{Sys.time()}: Invalid arguments or no play stats types data available! {e}"))
     },
     finally = {
     }
@@ -632,7 +643,7 @@ cfbd_play_stats_types <- function() {
 #'   try(cfbd_play_types())
 #' }
 cfbd_play_types <- function() {
-  full_url <- "https://api.collegefootballdata.com/play/types"
+  full_url <- "https://api.collegefootballdata.com/plays/types"
 
   # Check for CFBD API key
   if (!has_cfbd_key()) stop("CollegeFootballData.com now requires an API key.", "\n       See ?register_cfbd for details.", call. = FALSE)

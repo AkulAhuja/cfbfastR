@@ -104,12 +104,23 @@ cfbd_rankings <- function(year, week = NULL, season_type = "regular") {
 
   base_url <- "https://api.collegefootballdata.com/rankings?"
 
-  full_url <- paste0(
-    base_url,
-    "year=", year,
-    "&week=", week,
-    "&seasonType=", season_type
+  params <- list(
+    year = year,
+    week = week,
+    seasonType = season_type
   )
+  params <- Filter(function(x) !is.null(x) && !is.na(x) && nzchar(x), params)
+  full_url <- base_url
+  if (length(params) > 0) {
+    # URL-encode the parameter values and collapse into a query string
+    query_string <- paste(
+      names(params),
+      params,
+      sep = "=",
+      collapse = "&"
+    )
+    full_url <- paste0(base_url, query_string)
+  }
 
   # Check for CFBD API key
   if (!has_cfbd_key()) stop("CollegeFootballData.com now requires an API key.", "\n       See ?register_cfbd for details.", call. = FALSE)
@@ -226,12 +237,25 @@ cfbd_ratings_sp <- function(year = NULL, team = NULL) {
     }
   }
 
-  base_url <- "https://api.collegefootballdata.com/ratings/sp"
-  full_url <- paste0(
-    base_url,
-    "?year=", year,
-    "&team=", team
+  base_url <- "https://api.collegefootballdata.com/ratings/sp?"
+
+  params <- list(
+    year = year,
+    team = team
   )
+  params <- Filter(function(x) !is.null(x) && !is.na(x) && nzchar(x), params)
+  full_url <- base_url
+  if (length(params) > 0) {
+    # URL-encode the parameter values and collapse into a query string
+    query_string <- paste(
+      names(params),
+      params,
+      sep = "=",
+      collapse = "&"
+    )
+    full_url <- paste0(base_url, query_string)
+    print(full_url)
+  }
 
   # Check for CFBD API key
   if (!has_cfbd_key()) stop("CollegeFootballData.com now requires an API key.", "\n       See ?register_cfbd for details.", call. = FALSE)
@@ -283,7 +307,7 @@ cfbd_ratings_sp <- function(year = NULL, team = NULL) {
         make_cfbfastR_data("SP+ data from CollegeFootballData.com",Sys.time())
     },
     error = function(e){
-      message(glue::glue("{Sys.time()}: Invalid arguments or no S&P+ ratings data available!"))
+      message(glue::glue("{Sys.time()}: Invalid arguments or no S&P+ ratings data available! {e}"))
     },
     finally = {
     }
@@ -584,13 +608,24 @@ cfbd_ratings_elo <- function(year = NULL, week = NULL, team = NULL, conference =
 
   base_url <- "https://api.collegefootballdata.com/ratings/elo?"
 
-  full_url <- paste0(
-    base_url,
-    "year=", year,
-    "&week=", week,
-    "&team=", team,
-    "&conference=", conference
+  params <- list(
+    year = year,
+    week = week,
+    team = team,
+    conference = conference
   )
+  params <- Filter(function(x) !is.null(x) && !is.na(x) && nzchar(x), params)
+  full_url <- base_url
+  if (length(params) > 0) {
+    # URL-encode the parameter values and collapse into a query string
+    query_string <- paste(
+      names(params),
+      params,
+      sep = "=",
+      collapse = "&"
+    )
+    full_url <- paste0(base_url, query_string)
+  }
 
   # Check for CFBD API key
   if (!has_cfbd_key()) stop("CollegeFootballData.com now requires an API key.", "\n       See ?register_cfbd for details.", call. = FALSE)

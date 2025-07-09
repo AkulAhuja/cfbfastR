@@ -106,29 +106,28 @@ cfbd_betting_lines <- function(game_id = NULL,
   # cfbfastR::cfbd_betting_lines(year = 2018, week = 12, team = "Florida State")
   base_url <- "https://api.collegefootballdata.com/lines?"
 
-  if (!is.null(game_id)) {
-    full_url <- paste0(
-      base_url,
-      "gameId=", game_id,
-      "&year=", year,
-      "&week=", week,
-      "&seasonType=", season_type,
-      "&team=", team,
-      "&home=", home_team,
-      "&away=", away_team,
-      "&conference=", conference
+  params <- list(
+    gameId = game_id,
+    year = year,
+    week = week,
+    seasonType = season_type,
+    team = team,
+    home = home_team,
+    away = away_team,
+    conference = conference,
+    provider=line_provider
+  )
+  params <- Filter(function(x) !is.null(x) && !is.na(x) && nzchar(x), params)
+  full_url <- base_url
+  if (length(params) > 0) {
+    # URL-encode the parameter values and collapse into a query string
+    query_string <- paste(
+      names(params),
+      params,
+      sep = "=",
+      collapse = "&"
     )
-  } else {
-    full_url <- paste0(
-      base_url,
-      "year=", year,
-      "&week=", week,
-      "&seasonType=", season_type,
-      "&team=", team,
-      "&home=", home_team,
-      "&away=", away_team,
-      "&conference=", conference
-    )
+    full_url <- paste0(base_url, query_string)
   }
 
   # Check for CFBD API key
@@ -168,9 +167,13 @@ cfbd_betting_lines <- function(game_id = NULL,
                 is.na(.data$spread) ~ NA_character_,
                 .default = .data$formattedSpread
             )
+        ) %>%
+        dplyr::select(
+          -homeClassification,
+          -awayClassification
         )
 
-      
+
 
       if (!is.null(line_provider)) {
         if (is.list(df) & length(df) == 0) {
@@ -196,6 +199,9 @@ cfbd_betting_lines <- function(game_id = NULL,
 
       df <- df %>%
         make_cfbfastR_data("Betting lines data from CollegeFootballData.com",Sys.time())
+
+      print("BETTING DATA\n")
+      print(colnames(df))
     },
     error = function(e) {
       message(glue::glue("{Sys.time()}: Invalid arguments or no betting lines data available! {e}"))

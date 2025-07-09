@@ -34,6 +34,7 @@
 #' @importFrom utils URLencode
 #' @importFrom cli cli_abort
 #' @importFrom glue glue
+#' @importFrom janitor clean_names
 #' @import dplyr
 #' @import tidyr
 #' @import purrr
@@ -80,15 +81,38 @@ cfbd_coaches <- function(first = NULL,
   base_url <- "https://api.collegefootballdata.com/coaches?"
 
   # Create full url using base and input arguments
-  full_url <- paste0(
-    base_url,
-    "first=", first,
-    "&last=", last,
-    "&team=", team,
-    "&year=", year,
-    "&minYear=", min_year,
-    "&maxYear=", max_year
+  #full_url <- paste0(
+  #  base_url,
+  #  "first=", first,
+  #  "&last=", last,
+  #  "&team=", team,
+  #  "&year=", year,
+  #  "&minYear=", min_year,
+  #  "&maxYear=", max_year
+  #)
+
+
+  params <- list(
+    first = first,
+    last = last,
+    team = team,
+    year = year,
+    minYear = min_year,
+    maxYear = max_year
   )
+  params <- Filter(function(x) !is.null(x) && !is.na(x) && nzchar(x), params)
+  full_url <- base_url
+  if (length(params) > 0) {
+    # URL-encode the parameter values and collapse into a query string
+    query_string <- paste(
+      names(params),
+      params,
+      sep = "=",
+      collapse = "&"
+    )
+    full_url <- paste0(base_url, query_string)
+  }
+
 
   # Check for CFBD API key
   if (!has_cfbd_key()) stop("CollegeFootballData.com now requires an API key.", "\n       See ?register_cfbd for details.", call. = FALSE)
@@ -114,6 +138,8 @@ cfbd_coaches <- function(first = NULL,
         dplyr::as_tibble() %>%
         tidyr::unnest("seasons") %>%
         dplyr::arrange(.data$year)
+
+      df <- janitor::clean_names(df)
 
       df <- df %>%
         make_cfbfastR_data("Coaches data from CollegeFootballData.com",Sys.time())

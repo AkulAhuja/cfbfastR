@@ -191,18 +191,30 @@ cfbd_game_info <- function(year,
 
   base_url <- "https://api.collegefootballdata.com/games?"
 
-  full_url <- paste0(
-    base_url,
-    "year=", year,
-    "&week=", week,
-    "&seasonType=", season_type,
-    "&team=", team,
-    "&home=", home_team,
-    "&away=", away_team,
-    "&conference=", conference,
-    "&division=", division,
-    "&id=", game_id
+  params <- list(
+    year = year,
+    week = week,
+    season_type = season_type,
+    team = team,
+    home_team = home_team,
+    away_team = away_team,
+    conference = conference,
+    division = division,
+    game_id = game_id,
+    quarter_scores = quarter_scores
   )
+  params <- Filter(function(x) !is.null(x) && !is.na(x) && nzchar(x), params)
+  full_url <- base_url
+  if (length(params) > 0) {
+    # URL-encode the parameter values and collapse into a query string
+    query_string <- paste(
+      names(params),
+      params,
+      sep = "=",
+      collapse = "&"
+    )
+    full_url <- paste0(base_url, query_string)
+  }
 
   # Check for CFBD API key
   if (!has_cfbd_key()) stop("CollegeFootballData.com now requires an API key.", "\n       See ?register_cfbd for details.", call. = FALSE)
@@ -223,7 +235,8 @@ cfbd_game_info <- function(year,
       # Get the content and return it as data.frame
       df <- res %>%
         httr::content(as = "text", encoding = "UTF-8") %>%
-        jsonlite::fromJSON()
+        jsonlite::fromJSON() %>%
+        janitor::clean_names()
 
       if (!quarter_scores) {
         df <- dplyr::select(df, -"home_line_scores", -"away_line_scores") %>%
@@ -238,6 +251,14 @@ cfbd_game_info <- function(year,
         df <- df %>%
           dplyr::rename("game_id" = "id")
       }
+
+      df <- dplyr::rename(df,
+        "home_post_win_prob" = "home_postgame_win_probability",
+        "away_post_win_prob" = "away_postgame_win_probability",
+        "home_division" = "home_classification",
+        "away_division" = "away_classification",
+      )
+
       df <- df %>%
         make_cfbfastR_data("Game information from CollegeFootballData.com",Sys.time())
     },
@@ -327,14 +348,25 @@ cfbd_game_weather <- function(year,
   }
   base_url <- "https://api.collegefootballdata.com/games/weather?"
 
-  full_url <- paste0(
-    base_url,
-    "year=", year,
-    "&week=", week,
-    "&seasonType=", season_type,
-    "&team=", team,
-    "&conference=", conference
+  params <- list(
+    year = year,
+    week = week,
+    seasonType = season_type,
+    team = team,
+    conference = conference
   )
+  params <- Filter(function(x) !is.null(x) && !is.na(x) && nzchar(x), params)
+  full_url <- base_url
+  if (length(params) > 0) {
+    # URL-encode the parameter values and collapse into a query string
+    query_string <- paste(
+      names(params),
+      params,
+      sep = "=",
+      collapse = "&"
+    )
+    full_url <- paste0(base_url, query_string)
+  }
 
   # Check for CFBD API key
   if (!has_cfbd_key()) stop("CollegeFootballData.com now requires an API key.", "\n       See ?register_cfbd for details.", call. = FALSE)
@@ -366,7 +398,7 @@ cfbd_game_weather <- function(year,
         make_cfbfastR_data("Game weather data from CollegeFootballData.com",Sys.time())
     },
     error = function(e) {
-      message(glue::glue("{Sys.time()}:Invalid arguments or no game weather data available!"))
+      message(glue::glue("{Sys.time()}:Invalid arguments or no game weather data available! {e}"))
     },
     finally = {
     }
@@ -433,7 +465,11 @@ cfbd_calendar <- function(year) {
       df <- res %>%
         httr::content(as = "text", encoding = "UTF-8") %>%
         jsonlite::fromJSON() %>%
-        janitor::clean_names()
+        janitor::clean_names() %>%
+        dplyr::select(
+          -start_date,
+          -end_date
+        )
 
 
       df <- df %>%
@@ -530,16 +566,27 @@ cfbd_game_media <- function(year,
 
   base_url <- "https://api.collegefootballdata.com/games/media?"
 
-  full_url <- paste0(
-    base_url,
-    "year=", year,
-    "&week=", week,
-    "&seasonType=", season_type,
-    "&team=", team,
-    "&conference=", conference,
-    "&mediaType=", media_type,
-    "&classification=", division
+  params <- list(
+    year = year,
+    week = week,
+    season_type = season_type,
+    team = team,
+    conference = conference,
+    media_type = media_type,
+    division = division
   )
+  params <- Filter(function(x) !is.null(x) && !is.na(x) && nzchar(x), params)
+  full_url <- base_url
+  if (length(params) > 0) {
+    # URL-encode the parameter values and collapse into a query string
+    query_string <- paste(
+      names(params),
+      params,
+      sep = "=",
+      collapse = "&"
+    )
+    full_url <- paste0(base_url, query_string)
+  }
 
   # Check for CFBD API key
   if (!has_cfbd_key()) stop("CollegeFootballData.com now requires an API key.", "\n       See ?register_cfbd for details.", call. = FALSE)
@@ -701,7 +748,7 @@ cfbd_game_box_advanced <- function(game_id, long = FALSE) {
 
   full_url <- paste0(
     base_url,
-    "gameId=", game_id
+    "id=", game_id
   )
 
   # Check for CFBD API key
@@ -957,16 +1004,27 @@ cfbd_game_player_stats <- function(year,
 
   base_url <- "https://api.collegefootballdata.com/games/players?"
 
-  full_url <- paste0(
-    base_url,
-    "year=", year,
-    "&week=", week,
-    "&seasonType=", season_type,
-    "&team=", team,
-    "&conference=", conference,
-    "&category=", category,
-    "&gameId=", game_id
+  params <- list(
+    year = year,
+    week = week,
+    season_type = season_type,
+    team = team,
+    conference = conference,
+    category = category,
+    game_id = game_id
   )
+  params <- Filter(function(x) !is.null(x) && !is.na(x) && nzchar(x), params)
+  full_url <- base_url
+  if (length(params) > 0) {
+    # URL-encode the parameter values and collapse into a query string
+    query_string <- paste(
+      names(params),
+      params,
+      sep = "=",
+      collapse = "&"
+    )
+    full_url <- paste0(base_url, query_string)
+  }
 
   # Check for CFBD API key
   if (!has_cfbd_key()) stop("CollegeFootballData.com now requires an API key.", "\n       See ?register_cfbd for details.", call. = FALSE)
@@ -1126,7 +1184,7 @@ cfbd_game_player_stats <- function(year,
           "athlete_id" = "id",
           "athlete_name" = "name",
           "team_points" = "points",
-          "team" = "school",
+          # "team" = "school",
           "value" = "stat"
         ) %>%
         dplyr::select(-dplyr::any_of(c("category", "stat_category"))) %>%
@@ -1155,7 +1213,7 @@ cfbd_game_player_stats <- function(year,
         make_cfbfastR_data("Game player stats data from CollegeFootballData.com",Sys.time())
     },
     error = function(e) {
-      message(glue::glue("{Sys.time()}: Invalid arguments or no game player stats data available!"))
+      message(glue::glue("{Sys.time()}: Invalid arguments or no game player stats data available! {e}"))
     },
     finally = {
     }
@@ -1288,8 +1346,23 @@ cfbd_game_records <- function(year,
           "away_games" = "awayGames.games",
           "away_wins" = "awayGames.wins",
           "away_losses" = "awayGames.losses",
-          "away_ties" = "awayGames.ties"
-        )
+          "away_ties" = "awayGames.ties",
+        ) %>%
+        dplyr::select(
+          -neutralSiteGames.games,
+          -neutralSiteGames.wins,
+          -neutralSiteGames.losses,
+          -neutralSiteGames.ties,
+          -regularSeason.games,
+          -regularSeason.wins,
+          -regularSeason.losses,
+          -regularSeason.ties,
+          -postseason.games,
+          -postseason.wins,
+          -postseason.losses,
+          -postseason.ties,
+          -classification
+          )
 
       df <- df %>%
         make_cfbfastR_data("Game records data from CollegeFootballData.com",Sys.time())

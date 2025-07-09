@@ -280,7 +280,8 @@ cfbd_draft_picks <- function(year = NULL,
       df <- res %>%
         httr::content(as = "text", encoding = "UTF-8") %>%
         jsonlite::fromJSON(flatten=TRUE) %>%
-        janitor::clean_names()
+        janitor::clean_names() %>%
+        dplyr::select(-nfl_team_id)
 
       df <- df %>%
         make_cfbfastR_data("NFL draft data from CollegeFootballData.com",Sys.time())

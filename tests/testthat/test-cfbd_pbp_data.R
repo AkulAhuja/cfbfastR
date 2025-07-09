@@ -1,11 +1,12 @@
 test_that("2024 pbp handles completions properly", {
   # skip("working post-fix") # should fail without it
+
   p = cfbd_pbp_data(
     year = 2024,
     season_type = "regular",
     week = 1,
     team = "NC State",
-    play_type = "pass reception",
+    play_type = NULL,#"pass reception",
     epa_wpa = T
   )
 
@@ -25,7 +26,7 @@ test_that("base case 2023 pbp are already properly handled", {
     season_type = "regular",
     week = 2,
     team = "Georgia Tech",
-    play_type = "pass reception",
+    play_type = NULL, #"pass reception",
     epa_wpa = T
   )
 

@@ -374,6 +374,7 @@
 #' @importFrom utils URLencode
 #' @importFrom utils globalVariables
 #' @importFrom cli cli_abort
+#' @importFrom janitor clean_names
 #' @export
 
 cfbd_pbp_data <- function(year,
@@ -427,14 +428,33 @@ cfbd_pbp_data <- function(year,
 
   ## Inputs
   ## Year, Week, Team
-  full_url <- paste0(
-    play_base_url,
-    "seasonType=", season_type,
-    "&year=", year,
-    "&week=", week,
-    "&team=", team,
-    "&playType=", pt_id
+  #full_url <- paste0(
+  #  play_base_url,
+  #  "seasonType=", season_type,
+  #  "&year=", year,
+  #  "&week=", week,
+  #  "&team=", team,
+  #  "&playType=", pt_id
+  #)
+  params <- list(
+    seasonType = season_type,
+    year = year,
+    week = week,
+    team = team,
+    playType = pt_id
   )
+  params <- Filter(function(x) !is.null(x) && !is.na(x) && nzchar(x), params)
+  full_url <- play_base_url
+  if (length(params) > 0) {
+    # URL-encode the parameter values and collapse into a query string
+    query_string <- paste(
+      names(params),
+      params,
+      sep = "=",
+      collapse = "&"
+    )
+    full_url <- paste0(play_base_url, query_string)
+  }
 
   # Check for CFBD API key
   if (!has_cfbd_key()) stop("CollegeFootballData.com now requires an API key.", "\n       See ?register_cfbd for details.", call. = FALSE)
@@ -446,11 +466,19 @@ cfbd_pbp_data <- function(year,
   )
 
   # # Check the result
-  # check_status(res)
+  #check_status(res)
   raw_play_df <- res %>%
     httr::content(as = "text", encoding = "UTF-8") %>%
     jsonlite::fromJSON()
+
+  print(head(raw_play_df))
+
+  raw_play_df <- janitor::clean_names(raw_play_df)
+
   raw_play_df <- do.call(data.frame, raw_play_df)
+  raw_play_df <- rename(raw_play_df, "yard_line" = "yardline")
+
+  print(head(raw_play_df))
 
   if (nrow(raw_play_df) == 0) {
       warning("Most likely a bye week, the data pulled from the API was empty. Returning nothing
@@ -460,6 +488,10 @@ cfbd_pbp_data <- function(year,
   raw_play_df$spread <- NA_real_
   raw_play_df$formatted_spread <- NA_character_
   raw_play_df$over_under <- NA_real_
+
+  print("PBP DATA\n")
+  print(colnames(raw_play_df))
+
   if (year >= 2013) {
     tryCatch(
       expr = {
@@ -472,9 +504,6 @@ cfbd_pbp_data <- function(year,
             over_under = as.numeric(.data$over_under)
           ) %>%
           dplyr::select("game_id", "spread", "formatted_spread", "over_under")
-
-        print(game_spread)
-        print(raw_play_df)
 
         raw_play_df <- raw_play_df %>%
           dplyr::left_join(game_spread, by = c("game_id"))
@@ -1985,8 +2014,16 @@ prep_epa_df_after <- function(dat) {
       )
     )
 
+  print(colnames(dat))
+  print(head(dat))
+
   #--General weird plays that don't have an easy fix----
   na_yd_line <- which(is.na(dat$new_yardline) | dat$new_yardline >= 100)
+
+  print(na_yd_line)
+  print(dat["new_yardline"])
+  print(dat['yard_line'])
+
   dat$new_yardline[na_yd_line] <- dat$yard_line[na_yd_line + 1]
   neg_distance <- which(dat$new_distance < 0)
   dat$new_distance[neg_distance] <- dat$distance[neg_distance + 1]

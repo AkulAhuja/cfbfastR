@@ -152,19 +152,30 @@ cfbd_drives <- function(year,
 
   base_url <- "https://api.collegefootballdata.com/drives?"
 
-  full_url <- paste0(
-    base_url,
-    "year=", year,
-    "&seasonType=", season_type,
-    "&week=", week,
-    "&team=", team,
-    "&offense=", offense_team,
-    "&defense=", defense_team,
-    "&conference=", conference,
-    "&offenseConference=", offense_conference,
-    "&defenseConference=", defense_conference,
-    "&classification=", division
+  params <- list(
+    year = year,
+    season_type = season_type,
+    week = week,
+    team = team,
+    offense_team = offense_team,
+    defense_team = defense_team,
+    conference = conference,
+    offense_conference = offense_conference,
+    defense_conference = defense_conference,
+    division = division
   )
+  params <- Filter(function(x) !is.null(x) && !is.na(x) && nzchar(x), params)
+  full_url <- base_url
+  if (length(params) > 0) {
+    # URL-encode the parameter values and collapse into a query string
+    query_string <- paste(
+      names(params),
+      params,
+      sep = "=",
+      collapse = "&"
+    )
+    full_url <- paste0(base_url, query_string)
+  }
 
   # Check for CFBD API key
   if (!has_cfbd_key()) stop("CollegeFootballData.com now requires an API key.", "\n       See ?register_cfbd for details.", call. = FALSE)
@@ -220,6 +231,9 @@ cfbd_drives <- function(year,
 
       df <- df %>%
         make_cfbfastR_data("Drives data from CollegeFootballData.com",Sys.time())
+
+      print("DRIVE DATA\n")
+      print(colnames(df))
     },
     error = function(e) {
         message(glue::glue("{Sys.time()}: Invalid arguments or no drives data available!{e}"))

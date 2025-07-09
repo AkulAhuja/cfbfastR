@@ -1,5 +1,5 @@
 
-cols <- c("year", "team", "conference", "division", "rating", "ranking")
+cols <- c("year", "team", "conference", "division", "ranking", "rating")
 
 test_that("CFB Conference Ratings - Bill C.'s SP+", {
   skip_on_cran()

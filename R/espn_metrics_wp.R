@@ -75,7 +75,7 @@ espn_metrics_wp <- function(game_id) {
         make_cfbfastR_data("Win probability chart data from ESPN",Sys.time())
     },
     error = function(e) {
-      message(glue::glue("{Sys.time()}: game_id '{espn_game_id}' invalid or no ESPN win probability data available!"))
+      message(glue::glue("{Sys.time()}: game_id '{espn_game_id}' invalid or no ESPN win probability data available! {e}"))
     },
     finally = {
     }

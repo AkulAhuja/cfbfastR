@@ -1,6 +1,6 @@
 cols <- c(
-  "offense", "offense_conference", "defense", "defense_conference",
-  "game_id", "drive_id", "drive_number", "scoring", "start_period", "start_yardline",
+  "drive_id", "game_id", "offense", "offense_conference", "defense", "defense_conference",
+  "drive_number", "scoring", "start_period", "start_yardline",
   "start_yards_to_goal", "end_period", "end_yardline", "end_yards_to_goal", "plays",
   "yards", "drive_result", "is_home_offense", "start_offense_score",
   "start_defense_score", "end_offense_score", "end_defense_score",

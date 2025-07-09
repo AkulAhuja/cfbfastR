@@ -119,14 +119,25 @@ cfbd_metrics_ppa_games <- function(year,
 
   base_url <- "https://api.collegefootballdata.com/ppa/games?"
 
-  full_url <- paste0(
-    base_url,
-    "year=", year,
-    "&week=", week,
-    "&team=", team,
-    "&conference=", conference,
-    "&excludeGarbageTime=", excl_garbage_time
+  params <- list(
+    year = year,
+    week = week,
+    team = team,
+    conference = conference,
+    excludeGarbageTime = excl_garbage_time
   )
+  params <- Filter(function(x) !is.null(x) && !is.na(x) && nzchar(x), params)
+  full_url <- base_url
+  if (length(params) > 0) {
+    # URL-encode the parameter values and collapse into a query string
+    query_string <- paste(
+      names(params),
+      params,
+      sep = "=",
+      collapse = "&"
+    )
+    full_url <- paste0(base_url, query_string)
+  }
 
   # Check for CFBD API key
   if (!has_cfbd_key()) stop("CollegeFootballData.com now requires an API key.", "\n       See ?register_cfbd for details.", call. = FALSE)
@@ -155,6 +166,8 @@ cfbd_metrics_ppa_games <- function(year,
       df <- df %>%
         dplyr::rename("game_id" = "gameId") %>%
         as.data.frame()
+
+      df <- dplyr::select(df, -seasonType)
 
       df <- df %>%
         make_cfbfastR_data("PPA data from CollegeFootballData.com",Sys.time())
@@ -266,16 +279,27 @@ cfbd_metrics_ppa_players_games <- function(year = NULL,
 
   base_url <- "https://api.collegefootballdata.com/ppa/players/games?"
 
-  full_url <- paste0(
-    base_url,
-    "year=", year,
-    "&week=", week,
-    "&team=", team,
-    "&position=", position,
-    "&playerId=", athlete_id,
-    "&threshold=", threshold,
-    "&excludeGarbageTime=", excl_garbage_time
+  params <- list(
+    year = year,
+    week = week,
+    team = team,
+    position = position,
+    athleteId = athlete_id,
+    threshold = threshold,
+    excludeGarbageTime = excl_garbage_time
   )
+  params <- Filter(function(x) !is.null(x) && !is.na(x) && nzchar(x), params)
+  full_url <- base_url
+  if (length(params) > 0) {
+    # URL-encode the parameter values and collapse into a query string
+    query_string <- paste(
+      names(params),
+      params,
+      sep = "=",
+      collapse = "&"
+    )
+    full_url <- paste0(base_url, query_string)
+  }
 
   # Check for CFBD API key
   if (!has_cfbd_key()) stop("CollegeFootballData.com now requires an API key.", "\n       See ?register_cfbd for details.", call. = FALSE)
@@ -298,6 +322,8 @@ cfbd_metrics_ppa_players_games <- function(year = NULL,
         httr::content(as = "text", encoding = "UTF-8") %>%
         jsonlite::fromJSON(flatten = TRUE)
       colnames(df) <- gsub("averagePPA.", "avg_PPA_", colnames(df))
+
+      df <- dplyr::select(df, -seasonType, -id)
 
       df <- df %>%
         make_cfbfastR_data("Player PPA data from CollegeFootballData.com",Sys.time())
@@ -425,16 +451,27 @@ cfbd_metrics_ppa_players_season <- function(year = NULL,
 
   base_url <- "https://api.collegefootballdata.com/ppa/players/season?"
 
-  full_url <- paste0(
-    base_url,
-    "year=", year,
-    "&team=", team,
-    "&conference", conference,
-    "&position=", position,
-    "&playerId=", athlete_id,
-    "&threshold=", threshold,
-    "&excludeGarbageTime=", excl_garbage_time
+  params <- list(
+    year = year,
+    team = team,
+    conference = conference,
+    position = position,
+    athleteId = athlete_id,
+    threshold = threshold,
+    excludeGarbageTime = excl_garbage_time
   )
+  params <- Filter(function(x) !is.null(x) && !is.na(x) && nzchar(x), params)
+  full_url <- base_url
+  if (length(params) > 0) {
+    # URL-encode the parameter values and collapse into a query string
+    query_string <- paste(
+      names(params),
+      params,
+      sep = "=",
+      collapse = "&"
+    )
+    full_url <- paste0(base_url, query_string)
+  }
 
   # Check for CFBD API key
   if (!has_cfbd_key()) stop("CollegeFootballData.com now requires an API key.", "\n       See ?register_cfbd for details.", call. = FALSE)
@@ -456,20 +493,23 @@ cfbd_metrics_ppa_players_season <- function(year = NULL,
       df <- res %>%
         httr::content(as = "text", encoding = "UTF-8") %>%
         jsonlite::fromJSON(flatten = TRUE)
+      #df <- cbind(df, countablePlays=NA)
       colnames(df) <- gsub("averagePPA.", "avg_PPA_", colnames(df))
       colnames(df) <- gsub("totalPPA.", "total_PPA_", colnames(df))
-      colnames(df) <- gsub("countablePlays", "countable_plays", colnames(df))
+      #colnames(df) <- gsub("countablePlays", "countable_plays", colnames(df))
       colnames(df) <- gsub("Down", "_down", colnames(df))
 
+      print(colnames(df))
+
       df <- df %>%
-        dplyr::rename("athlete_id" = "id") %>%
-        dplyr::arrange(-.data$countable_plays)
+        dplyr::rename("athlete_id" = "id")
+        #dplyr::arrange(-.data$countable_plays)
 
       df <- df %>%
         make_cfbfastR_data("Player season PPA data from CollegeFootballData.com",Sys.time())
     },
     error = function(e) {
-      message(glue::glue("{Sys.time()}: Invalid arguments or no CFBData metrics PPA season-level players data available!"))
+      message(glue::glue("{Sys.time()}: Invalid arguments or no CFBData metrics PPA season-level players data available! {e}"))
     },
     finally = {
     }
@@ -745,13 +785,24 @@ cfbd_metrics_wp_pregame <- function(year = NULL,
   }
   base_url <- "https://api.collegefootballdata.com/metrics/wp/pregame?"
 
-  full_url <- paste0(
-    base_url,
-    "year=", year,
-    "&week=", week,
-    "&team=", team,
-    "&seasonType=", season_type
+  params <- list(
+    year = year,
+    week = week,
+    team = team,
+    seasonType = season_type
   )
+  params <- Filter(function(x) !is.null(x) && !is.na(x) && nzchar(x), params)
+  full_url <- base_url
+  if (length(params) > 0) {
+    # URL-encode the parameter values and collapse into a query string
+    query_string <- paste(
+      names(params),
+      params,
+      sep = "=",
+      collapse = "&"
+    )
+    full_url <- paste0(base_url, query_string)
+  }
 
   # Check for CFBD API key
   if (!has_cfbd_key()) stop("CollegeFootballData.com now requires an API key.", "\n       See ?register_cfbd for details.", call. = FALSE)
@@ -779,7 +830,8 @@ cfbd_metrics_wp_pregame <- function(year = NULL,
         httr::content(as = "text", encoding = "UTF-8") %>%
         jsonlite::fromJSON() %>%
         janitor::clean_names() %>%
-        dplyr::mutate(away_win_prob = 1 - as.numeric(.data$home_win_prob)) %>%
+        dplyr::rename("home_win_prob" = "home_win_probability") %>%
+        dplyr::mutate(away_win_prob = 1 - as.numeric(home_win_prob)) %>%
         dplyr::select(all_of(cols))
 
       df <- df %>%
@@ -879,14 +931,17 @@ cfbd_metrics_wp <- function(game_id) {
         httr::content(as = "text", encoding = "UTF-8") %>%
         jsonlite::fromJSON() %>%
         janitor::clean_names() %>%
-        dplyr::mutate(away_win_prob = 1 - as.numeric(.data$home_win_prob)) %>%
+        dplyr::rename(
+          "home_win_prob" = "home_win_probability"
+        ) %>%
+        dplyr::mutate(away_win_prob = 1 - as.numeric(home_win_prob)) %>%
         dplyr::select(all_of(cols))
 
       df <- df %>%
         make_cfbfastR_data("WP data from CollegeFootballData.com",Sys.time())
     },
     error = function(e) {
-      message(glue::glue("{Sys.time()}: Invalid arguments or no CFBData metrics win probability data available!"))
+      message(glue::glue("{Sys.time()}: Invalid arguments or no CFBData metrics win probability data available!{e}"))
     },
     finally = {
     }
